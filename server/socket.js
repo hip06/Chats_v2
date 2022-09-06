@@ -7,21 +7,26 @@ const handleSocket = (server) => {
             origin: process.env.CLIENT_URL
         }
     })
-    const onlineUsers = []
-    const updateOnline = (userId) => {
-        let el = onlineUsers.find(i => i === userId)
-        return el ? onlineUsers.splice(onlineUsers.indexOf(el), 1) : onlineUsers.push(userId)
+    let onlineUsers = []
+    const addUser = userId => {
+        if (!onlineUsers.some(item => item === userId)) {
+            onlineUsers = [...onlineUsers, userId]
+        }
+    }
+    const deleteUser = userId => {
+        onlineUsers = onlineUsers.filter(item => item !== userId)
     }
 
     io.on('connection', socket => {
         socket.on('connected', (userId, socketId) => {
-            updateOnline(userId)
-            socket.emit('online-users', onlineUsers)
+            addUser(userId)
+            io.emit('online-users', onlineUsers)
 
 
 
             socket.on('disconnect', () => {
-                updateOnline(userId)
+                deleteUser(userId)
+                io.emit('online-users', onlineUsers)
             })
         })
     })

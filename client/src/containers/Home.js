@@ -1,30 +1,22 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
 import { Navigation, Conversation } from '../components'
-import { useSelector } from 'react-redux'
 import path from '../ultis/path'
 import socket from '../socket'
-import { apiGetUsers } from '../apis/user'
-
+import { useSelector, useDispatch } from 'react-redux'
+import * as actions from '../store/actions'
 const Home = () => {
     const { isLoggedIn, current } = useSelector(state => state.auth)
-    const [onlineUsers, setOnlineUsers] = useState([])
-
+    const dispatch = useDispatch()
     useEffect(() => {
         socket.on('connect', () => {
-            socket.emit('connected', current.id, socket.id)
-            socket.on('online-users', async (onlines) => {
-                if (onlines) {
-                    const response = await apiGetUsers({ ids: onlines })
-                    if (response?.data.err === 0) {
-                        setOnlineUsers(response.data.response)
-                    }
-                }
+            current.id && socket.emit('connected', current.id, socket.id)
+            socket.on('online-users', onlines => {
+                const filtered = onlines?.filter(id => id !== current.id)
+                dispatch(actions.getOnlines({ ids: filtered }))
             })
         })
-    }, [socket])
-
-    // create user reducer
+    }, [socket, current.id])
 
     if (!isLoggedIn) return <Navigate to={path.LOGIN} replace={true} />
     return (
